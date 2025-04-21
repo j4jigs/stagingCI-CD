@@ -23,6 +23,6 @@ resource "aws_instance" "example" {
   instance_type = "t2.micro"
 
   tags = {
-    Name = "SimpleEC2 for workflow"
+    Name = "SimpleEC2 for workflow file"
   }
 }
