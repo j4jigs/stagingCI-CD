@@ -26,3 +26,8 @@ resource "aws_instance" "example" {
     Name = "SimpleEC2 instance"
   }
 }
+
+resource "aws_s3_bucket" "example_bucket" {
+  bucket = "my-unique-bucket-name-12345" # Bucket name must be globally unique
+  acl    = "private"
+}  
