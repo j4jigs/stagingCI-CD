@@ -1,0 +1,75 @@
+name: Staging Terraform Pipeline
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'terraform/aws/staging/**'
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - 'terraform/aws/staging/**'
+
+env:
+  TF_WORKING_DIR: terraform/aws/staging
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+
+jobs:
+  terraform-check:
+    if: github.ref != 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    name: Terraform Validate and Plan
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.7
+
+      - name: Terraform Init
+        run: terraform -chdir=${{ env.TF_WORKING_DIR }} init
+
+      - name: Terraform Validate
+        run: terraform -chdir=${{ env.TF_WORKING_DIR }} validate
+
+      - name: Terraform Plan
+        run: terraform -chdir=${{ env.TF_WORKING_DIR }} plan
+
+  terraform-apply:
+    if: github.event_name == 'pull_request' && github.ref == 'refs/heads/dev' && github.event.action == 'closed' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    name: Terraform Apply on Merge to dev
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.7
+
+      - name: Terraform Init
+        run: terraform -chdir=${{ env.TF_WORKING_DIR }} init
+
+      - name: Terraform Apply
+        run: terraform -chdir=${{ env.TF_WORKING_DIR }} apply -auto-approve
