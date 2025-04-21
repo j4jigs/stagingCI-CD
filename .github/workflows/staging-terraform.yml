@@ -22,7 +22,7 @@ jobs:
   terraform-check:
     if: github.ref != 'refs/heads/dev'
     runs-on: ubuntu-latest
-    name: Terraform Validate and Plan (Feature Branch)
+    name: Terraform Validate and Plan
 
     steps:
       - name: Checkout Code
