@@ -27,6 +27,11 @@ resource "aws_instance" "example" {
   }
 }
 
-resource "aws_s3_bucket" "example_bucket" {
-  bucket = "my-unique-bucket-name-12345" # Bucket name must be globally unique
- }  
+resource "aws_instance" "example" {
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = "t2.micro"
+
+  tags = {
+    Name = "SimpleEC2 instance TWO"
+  }
+}
