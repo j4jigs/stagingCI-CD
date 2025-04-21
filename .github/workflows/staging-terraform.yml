@@ -10,7 +10,7 @@ on:
   pull_request:
     types: [closed]
     branches:
-      - dev
+      - main
     paths:
       - 'terraform/aws/staging/**'
 
@@ -20,7 +20,7 @@ env:
 
 jobs:
   terraform-check:
-    if: github.ref != 'refs/heads/dev'
+    if: github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
     name: Terraform Validate and Plan (Feature Branch)
 
