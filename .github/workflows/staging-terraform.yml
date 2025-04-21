@@ -6,7 +6,9 @@ on:
       - '**'
     paths:
       - 'terraform/aws/staging/**'
+
   pull_request:
+    types: [closed]
     branches:
       - dev
     paths:
@@ -20,25 +22,25 @@ jobs:
   terraform-check:
     if: github.ref != 'refs/heads/dev'
     runs-on: ubuntu-latest
-    name: Terraform Validate and Plan
+    name: Terraform Validate and Plan (Feature Branch)
 
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
+      - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.7
 
-      - name: Terraform Init
+      - name: Terraform Init (with S3 backend)
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} init
 
       - name: Terraform Validate
@@ -48,27 +50,27 @@ jobs:
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} plan
 
   terraform-apply:
-    if: github.event_name == 'pull_request' && github.ref == 'refs/heads/dev' && github.event.action == 'closed' && github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    name: Terraform Apply on Merge to dev
+    name: Terraform Apply (on merge to dev)
 
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
+      - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.7
 
-      - name: Terraform Init
+      - name: Terraform Init (with S3 backend)
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} init
 
       - name: Terraform Apply
