@@ -32,7 +32,7 @@ resource "aws_instance" "example" {
   instance_type = "t2.micro"
 
   tags = {
-    Name = "SimpleEC2 instance TWO"
+    Name = "SimpleEC2 instance super"
   }
 }
 
