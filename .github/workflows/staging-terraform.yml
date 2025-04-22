@@ -70,8 +70,8 @@ jobs:
         with:
           terraform_version: 1.5.7
 
-    #  - name: Terraform Init (with S3 backend)
-    #    run: terraform -chdir=${{ env.TF_WORKING_DIR }} init
+      - name: Terraform Init (with S3 backend)
+        run: terraform -chdir=${{ env.TF_WORKING_DIR }} init
 
       - name: Terraform Apply
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} apply -auto-approve        
