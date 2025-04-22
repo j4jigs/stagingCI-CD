@@ -50,6 +50,6 @@ resource "aws_instance" "example3" {
   instance_type = "t2.micro"
 
   tags = {
-    Name = "SimpleEC2 instance Duper eleven"
+    Name = "SimpleEC2 instance super duper"
   }
 }
