@@ -27,7 +27,7 @@ resource "aws_instance" "example" {
   }
 }
 
-#resource "aws_instance" "example1" {
+resource "aws_instance" "example1" {
   ami           = data.aws_ami.amazon_linux.id
   instance_type = "t2.micro"
 
