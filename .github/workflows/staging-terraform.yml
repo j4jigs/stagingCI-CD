@@ -43,8 +43,10 @@ jobs:
       - name: Terraform Init (with S3 backend)
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} init
 
+      - name: Terraform Plan
+        run: terraform -chdir=${{ env.TF_WORKING_DIR }} plan
+      
       - name: Terraform Validate
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} validate
 
-      - name: Terraform Plan
-        run: terraform -chdir=${{ env.TF_WORKING_DIR }} plan
+      
