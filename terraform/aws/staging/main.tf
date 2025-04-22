@@ -18,3 +18,11 @@ data "aws_ami" "amazon_linux" {
   owners = ["137112412989"] # Amazon
 }
 
+resource "aws_instance" "example" {
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = "t2.micro"
+
+  tags = {
+    Name = "SimpleEC2 instance"
+  }
+}
