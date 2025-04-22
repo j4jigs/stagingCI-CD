@@ -18,38 +18,3 @@ data "aws_ami" "amazon_linux" {
   owners = ["137112412989"] # Amazon
 }
 
-resource "aws_instance" "example" {
-  ami           = data.aws_ami.amazon_linux.id
-  instance_type = "t2.micro"
-
-  tags = {
-    Name = "SimpleEC2 instance"
-  }
-}
-
-resource "aws_instance" "example1" {
-  ami           = data.aws_ami.amazon_linux.id
-  instance_type = "t2.micro"
-
-  tags = {
-    Name = "SimpleEC2 instance super"
-  }
-}
-
-resource "aws_instance" "example2" {
-  ami           = data.aws_ami.amazon_linux.id
-  instance_type = "t2.micro"
-
-  tags = {
-    Name = "SimpleEC2 instance super fine"
-  }
-}
-
-resource "aws_instance" "example3" {
-  ami           = data.aws_ami.amazon_linux.id
-  instance_type = "t2.micro"
-
-  tags = {
-    Name = "SimpleEC2 instance Duper one"
-  }
-}
