@@ -10,7 +10,7 @@ on:
   pull_request:
     types: [closed]
     branches:
-      - main
+      - dev
     paths:
       - 'terraform/aws/staging/**'
 
