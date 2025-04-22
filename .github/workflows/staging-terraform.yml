@@ -20,7 +20,7 @@ env:
 
 jobs:
   terraform-check:
-    if: github.ref != 'refs/heads/main'
+    if: github.ref != 'refs/heads/dev'
     runs-on: ubuntu-latest
     name: Terraform Validate and Plan
 
