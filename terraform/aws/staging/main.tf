@@ -44,3 +44,12 @@ resource "aws_instance" "example2" {
     Name = "SimpleEC2 instance super fine"
   }
 }
+
+resource "aws_instance" "example2" {
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = "t2.micro"
+
+  tags = {
+    Name = "SimpleEC2 instance Duper eleven"
+  }
+}
