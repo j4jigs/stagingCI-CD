@@ -1,16 +1,10 @@
-name: Staging Terraform Pipeline
+name: Staging Terraform CI/CD
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
     branches:
-      - '**'
-    paths:
-      - 'terraform/aws/staging/**'
-
-  pull_request:
-    types: [closed]
-    branches:
-      - dev
+      - feature/
     paths:
       - 'terraform/aws/staging/**'
 
@@ -20,9 +14,9 @@ env:
 
 jobs:
   terraform-check:
-    if: github.ref != 'refs/heads/dev'
+    if: github.event.action != 'closed'
+    name: Terraform Validate and Plan (PR Events Only)
     runs-on: ubuntu-latest
-    name: Terraform Validate and Plan
 
     steps:
       - name: Checkout Code
@@ -40,19 +34,19 @@ jobs:
         with:
           terraform_version: 1.5.7
 
-      - name: Terraform Init (with S3 backend)
+      - name: Terraform Init
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} init
 
       - name: Terraform Plan
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} plan
-      
+
       - name: Terraform Validate
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} validate
 
   terraform-apply:
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'dev'
+    name: Terraform Apply on Merge to Dev
     runs-on: ubuntu-latest
-    name: Terraform Apply (on merge to dev)
 
     steps:
       - name: Checkout Code
@@ -70,9 +64,8 @@ jobs:
         with:
           terraform_version: 1.5.7
 
-      - name: Terraform Init (with S3 backend)
+      - name: Terraform Init
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} init
 
       - name: Terraform Apply
-        run: terraform -chdir=${{ env.TF_WORKING_DIR }} apply -auto-approve        
-        
+        run: terraform -chdir=${{ env.TF_WORKING_DIR }} apply -auto-approve
