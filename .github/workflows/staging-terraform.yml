@@ -1,7 +1,7 @@
 name: Staging Terraform Pipeline
 
 on:
-  push:
+  pull:
     branches:
       - '**'
     paths:
