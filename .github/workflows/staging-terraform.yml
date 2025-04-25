@@ -5,33 +5,44 @@ on:
     types: [opened, synchronize, reopened, closed]
     branches:
       - dev
+    paths:
+      - 'terraform/aws/staging/**'
+      - 'terraform/aws/production/**'
 
 jobs:
+  detect-changes:
+    name: Detect Changed Paths
+    runs-on: ubuntu-latest
+    outputs:
+      staging: ${{ steps.filter.outputs.staging }}
+      production: ${{ steps.filter.outputs.production }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check changed paths
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            staging:
+              - 'terraform/aws/staging/**'
+            production:
+              - 'terraform/aws/production/**'
+
   terraform-staging:
     name: Terraform Plan & Apply - Staging
+    needs: detect-changes
+    if: needs.detect-changes.outputs.staging == 'true'
     runs-on: ubuntu-latest
     env:
       TF_WORKING_DIR: terraform/aws/staging
       AWS_REGION: ${{ secrets.AWS_REGION_STAGING }}
-
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Check if staging files changed
-        id: check_staging
-        run: |
-          git fetch origin dev
-          if git diff --name-only origin/dev...HEAD | grep -q '^terraform/aws/staging/'; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "No changes in staging files. Skipping."
-            fi
-        shell: bash
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Configure AWS Credentials (Staging)
-        if: steps.check_staging.outputs.changed == 'true'
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_STAGING }}
@@ -39,29 +50,27 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
-        if: steps.check_staging.outputs.changed == 'true'
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.7
 
       - name: Terraform Init
-        if: steps.check_staging.outputs.changed == 'true'
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} init
 
       - name: Terraform Plan
-        if: steps.check_staging.outputs.changed == 'true'
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} plan
 
       - name: Terraform Validate
-        if: steps.check_staging.outputs.changed == 'true'
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} validate
 
       - name: Terraform Apply
-        if: steps.check_staging.outputs.changed == 'true' && github.event.pull_request.merged == true
+        if: github.event.pull_request.merged == true
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} apply -auto-approve
 
   terraform-production:
     name: Terraform Plan & Apply - Production
+    needs: detect-changes
+    if: needs.detect-changes.outputs.production == 'true'
     runs-on: ubuntu-latest
     environment:
       name: production
@@ -69,25 +78,12 @@ jobs:
     env:
       TF_WORKING_DIR: terraform/aws/production
       AWS_REGION: ${{ secrets.AWS_REGION_PROD }}
-
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Check if production files changed
-        id: check_production
-        run: |
-          git fetch origin dev
-          if git diff --name-only origin/dev...HEAD | grep -q '^terraform/aws/production/'; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "No changes in production files. Skipping."
-            fi
-        shell: bash
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Configure AWS Credentials (Production)
-        if: steps.check_production.outputs.changed == 'true'
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
@@ -95,23 +91,19 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
-        if: steps.check_production.outputs.changed == 'true'
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.7
 
       - name: Terraform Init
-        if: steps.check_production.outputs.changed == 'true'
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} init
 
       - name: Terraform Plan
-        if: steps.check_production.outputs.changed == 'true'
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} plan
 
       - name: Terraform Validate
-        if: steps.check_production.outputs.changed == 'true'
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} validate
 
       - name: Terraform Apply
-        if: steps.check_production.outputs.changed == 'true' && github.event.pull_request.merged == true
+        if: github.event.pull_request.merged == true
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} apply -auto-approve
