@@ -12,11 +12,10 @@ on:
 jobs:
   terraform-staging:
     if: |
-  github.event_name == 'pull_request' &&
-  github.event.action != 'closed' &&
-  contains(join(github.event.pull_request.changed_files, ','), 'terraform/aws/staging/') &&
-  startsWith(github.head_ref, 'feature/')
-
+      github.event_name == 'pull_request' &&
+      github.event.action != 'closed' &&
+      contains(join(github.event.pull_request.changed_files, ','), 'terraform/aws/staging/') &&
+      startsWith(github.head_ref, 'feature/')
     name: Terraform Plan & Apply - Staging
     runs-on: ubuntu-latest
     env:
@@ -44,6 +43,9 @@ jobs:
 
       - name: Terraform Plan
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} plan
+      
+      - name: Terraform Validate
+        run: terraform -chdir=${{ env.TF_WORKING_DIR }} validate  
 
       - name: Terraform Apply
         if: github.event.pull_request.merged == true
@@ -51,12 +53,15 @@ jobs:
 
   terraform-production:
     if: |
-  github.event_name == 'pull_request' &&
-  github.event.action != 'closed' &&
-  contains(join(github.event.pull_request.changed_files, ','), 'terraform/aws/production/') &&
-  startsWith(github.head_ref, 'feature/')
+      github.event_name == 'pull_request' &&
+      github.event.action != 'closed' &&
+      contains(join(github.event.pull_request.changed_files, ','), 'terraform/aws/production/') &&
+      startsWith(github.head_ref, 'feature/')
     name: Terraform Plan & Apply - Production
     runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://console.aws.amazon.com/
     env:
       TF_WORKING_DIR: terraform/aws/production
       AWS_REGION: ${{ secrets.AWS_REGION_PROD }}
@@ -82,6 +87,9 @@ jobs:
 
       - name: Terraform Plan
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} plan
+
+      - name: Terraform Validate
+        run: terraform -chdir=${{ env.TF_WORKING_DIR }} validate   
 
       - name: Terraform Apply
         if: github.event.pull_request.merged == true
