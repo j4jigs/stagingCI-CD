@@ -22,10 +22,12 @@ jobs:
         id: check_staging
         run: |
           git fetch origin dev
-          if git diff --name-only origin/dev | grep -q '^terraform/aws/staging/'; then
+          if git diff --name-only origin/dev...HEAD | grep -q '^terraform/aws/staging/'; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No changes in staging files. Skipping."
+        shell: bash
 
       - name: Configure AWS Credentials (Staging)
         if: steps.check_staging.outputs.changed == 'true'
@@ -75,10 +77,12 @@ jobs:
         id: check_production
         run: |
           git fetch origin dev
-          if git diff --name-only origin/dev | grep -q '^terraform/aws/production/'; then
+          if git diff --name-only origin/dev...HEAD | grep -q '^terraform/aws/production/'; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No changes in production files. Skipping."
+        shell: bash
 
       - name: Configure AWS Credentials (Production)
         if: steps.check_production.outputs.changed == 'true'
