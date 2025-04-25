@@ -1,38 +1,40 @@
-name: Staging Terraform CI/CD
+name: Terraform CI/CD for Staging and Production
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, closed]
     branches:
       - dev
     paths:
       - 'terraform/aws/staging/**'
-
-env:
-  TF_WORKING_DIR: terraform/aws/staging
-  AWS_REGION: ${{ secrets.AWS_REGION }}
+      - 'terraform/aws/production/**'
 
 jobs:
-  terraform-check:
+  terraform-staging:
     if: |
-      github.event_name == 'pull_request' &&
-      github.event.action != 'closed' &&
-      startsWith(github.head_ref, 'feature/')
-    name: Terraform Validate and Plan (PR from feature/**)
+  github.event_name == 'pull_request' &&
+  github.event.action != 'closed' &&
+  contains(join(github.event.pull_request.changed_files, ','), 'terraform/aws/staging/') &&
+  startsWith(github.head_ref, 'feature/')
+
+    name: Terraform Plan & Apply - Staging
     runs-on: ubuntu-latest
+    env:
+      TF_WORKING_DIR: terraform/aws/staging
+      AWS_REGION: ${{ secrets.AWS_REGION_STAGING }}
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Configure AWS Credentials
+      - name: Configure AWS Credentials (Staging)
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_STAGING }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_STAGING }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Set up Terraform
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.7
@@ -43,29 +45,34 @@ jobs:
       - name: Terraform Plan
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} plan
 
-      - name: Terraform Validate
-        run: terraform -chdir=${{ env.TF_WORKING_DIR }} validate
+      - name: Terraform Apply
+        if: github.event.pull_request.merged == true
+        run: terraform -chdir=${{ env.TF_WORKING_DIR }} apply -auto-approve
 
-  terraform-apply:
+  terraform-production:
     if: |
-      github.event.pull_request.merged == true &&
-      github.event.pull_request.base.ref == 'dev' &&
-      startsWith(github.head_ref, 'feature/')
-    name: Terraform Apply (on merge to dev)
+  github.event_name == 'pull_request' &&
+  github.event.action != 'closed' &&
+  contains(join(github.event.pull_request.changed_files, ','), 'terraform/aws/production/') &&
+  startsWith(github.head_ref, 'feature/')
+    name: Terraform Plan & Apply - Production
     runs-on: ubuntu-latest
+    env:
+      TF_WORKING_DIR: terraform/aws/production
+      AWS_REGION: ${{ secrets.AWS_REGION_PROD }}
 
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
+      - name: Configure AWS Credentials (Production)
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Set up Terraform
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.7
@@ -73,7 +80,9 @@ jobs:
       - name: Terraform Init
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} init
 
-      - name: Terraform Apply
-        run: terraform -chdir=${{ env.TF_WORKING_DIR }} apply -auto-approve
+      - name: Terraform Plan
+        run: terraform -chdir=${{ env.TF_WORKING_DIR }} plan
 
-        
+      - name: Terraform Apply
+        if: github.event.pull_request.merged == true
+        run: terraform -chdir=${{ env.TF_WORKING_DIR }} apply -auto-approve
