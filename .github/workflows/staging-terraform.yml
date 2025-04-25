@@ -10,39 +10,28 @@ on:
       - 'terraform/aws/production/**'
 
 jobs:
-  detect-changes:
-    name: Detect Changed Paths
+  terraform-staging:
+    name: Terraform Plan & Apply - Staging
     runs-on: ubuntu-latest
-    outputs:
-      staging: ${{ steps.filter.outputs.staging }}
-      production: ${{ steps.filter.outputs.production }}
+    env:
+      TF_WORKING_DIR: terraform/aws/staging
+      AWS_REGION: ${{ secrets.AWS_REGION_STAGING }}
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - name: Check changed paths
+      - name: Detect changes for staging
         id: filter
         uses: dorny/paths-filter@v2
         with:
           filters: |
             staging:
               - 'terraform/aws/staging/**'
-            production:
-              - 'terraform/aws/production/**'
-
-  terraform-staging:
-    name: Terraform Plan & Apply - Staging
-    needs: detect-changes
-    if: needs.detect-changes.outputs.staging == 'true'
-    runs-on: ubuntu-latest
-    env:
-      TF_WORKING_DIR: terraform/aws/staging
-      AWS_REGION: ${{ secrets.AWS_REGION_STAGING }}
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
       - name: Configure AWS Credentials (Staging)
+        if: steps.filter.outputs.staging == 'true'
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_STAGING }}
@@ -50,27 +39,29 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
+        if: steps.filter.outputs.staging == 'true'
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.7
 
       - name: Terraform Init
+        if: steps.filter.outputs.staging == 'true'
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} init
 
       - name: Terraform Plan
+        if: steps.filter.outputs.staging == 'true'
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} plan
 
       - name: Terraform Validate
+        if: steps.filter.outputs.staging == 'true'
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} validate
 
       - name: Terraform Apply
-        if: github.event.pull_request.merged == true
+        if: steps.filter.outputs.staging == 'true' && github.event.pull_request.merged == true
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} apply -auto-approve
 
   terraform-production:
     name: Terraform Plan & Apply - Production
-    needs: detect-changes
-    if: needs.detect-changes.outputs.production == 'true'
     runs-on: ubuntu-latest
     environment:
       name: production
@@ -79,11 +70,21 @@ jobs:
       TF_WORKING_DIR: terraform/aws/production
       AWS_REGION: ${{ secrets.AWS_REGION_PROD }}
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
+      - name: Detect changes for production
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            production:
+              - 'terraform/aws/production/**'
+
       - name: Configure AWS Credentials (Production)
+        if: steps.filter.outputs.production == 'true'
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
@@ -91,19 +92,23 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
+        if: steps.filter.outputs.production == 'true'
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.7
 
       - name: Terraform Init
+        if: steps.filter.outputs.production == 'true'
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} init
 
       - name: Terraform Plan
+        if: steps.filter.outputs.production == 'true'
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} plan
 
       - name: Terraform Validate
+        if: steps.filter.outputs.production == 'true'
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} validate
 
       - name: Terraform Apply
-        if: github.event.pull_request.merged == true
+        if: steps.filter.outputs.production == 'true' && github.event.pull_request.merged == true
         run: terraform -chdir=${{ env.TF_WORKING_DIR }} apply -auto-approve
