@@ -27,6 +27,7 @@ jobs:
           else
             echo "changed=false" >> $GITHUB_OUTPUT
             echo "No changes in staging files. Skipping."
+            fi
         shell: bash
 
       - name: Configure AWS Credentials (Staging)
@@ -82,6 +83,7 @@ jobs:
           else
             echo "changed=false" >> $GITHUB_OUTPUT
             echo "No changes in production files. Skipping."
+            fi
         shell: bash
 
       - name: Configure AWS Credentials (Production)
